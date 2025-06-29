@@ -1,0 +1,167 @@
+package game.map;
+
+
+import game.core.GameEntity;
+import game.items.Wall;
+import game.logging.LogManager;
+import javax.swing.*;
+import java.util.*;
+
+/**
+ * Represents the 2D grid-based game board.
+ * Stores a mapping between positions and the list of entities (items, players, enemies) at each cell.
+ */
+public class GameMap {
+    private Map<Position, List<GameEntity>> grid = new HashMap<>();
+
+
+    private int size;
+    /**
+     * Adds an entity to a specific position on the map.
+     * If no entities exist at that position yet, a new list is created.
+     *
+     * @param pos    The position to place the entity at.
+     * @param entity The entity to be added.
+     */
+
+    public boolean addEntity(Position pos, GameEntity entity) {
+        if (pos == null || entity == null) return false;
+        grid.computeIfAbsent(pos, k -> new ArrayList<>()).add(entity);
+        return true;
+    }
+
+
+    /**
+     * Removes a specific entity from a position on the map.
+     * If the list becomes empty after removal, the entry is removed from the map.
+     *
+     * @param pos    The position from which to remove the entity.
+     * @param entity The entity to be removed.
+     */
+
+    public void removeEntity(Position pos, GameEntity entity) {
+        List<GameEntity> entities = grid.get(pos);
+        if (entities != null && entity != null) {
+            entities.remove(entity);
+            if (entities.isEmpty()) grid.remove(pos);
+        }
+    }
+
+
+    /**
+     * Returns the list of entities at a given position.
+     * If no entities exist there, returns an empty list.
+     *
+     * @param pos The position to look at.
+     * @return List of GameEntities (can be empty but never null).
+     */
+    public List<GameEntity> getEntitiesAt(Position pos) {
+        return grid.computeIfAbsent(pos, k -> new ArrayList<>());
+    }
+
+    /**
+     * Checks whether a position is valid (non-negative coordinates).
+     *
+     * @param pos The position to check.
+     * @return true if the position is within valid board boundaries.
+     */
+    public boolean isValidPosition(Position pos) {
+        return pos.getRow() >= 0 && pos.getCol() >= 0 && pos.getRow() < size && pos.getCol() < size;
+    }
+
+    /**
+     * Returns the entire grid (used for visibility updates or debugging).
+     *
+     * @return A map of all positions and their entity lists.
+     */
+    public Map<Position, List<GameEntity>> getGrid() {
+        return grid;
+    }
+
+
+    // Add this constructor to support new GameMap(size)
+    public GameMap(int size) {
+        this.size = size;
+        for (int row = 0; row < size; row++) {
+            for (int col = 0; col < size; col++) {
+                Position pos = new Position(row, col);
+                grid.put(pos, new ArrayList<>());
+            }
+        }
+    }
+
+    public GameMap() {
+        this(10);
+    }
+
+    public void clear() {
+        grid.clear();
+    }
+
+    
+
+    public int getMapSize(){return size;}
+
+    public boolean isWall(Position pos)
+    {
+        List<GameEntity> entities = getEntitiesAt(pos);
+        for(GameEntity e : entities)
+        {
+            if(e instanceof Wall)
+                return true;
+        }
+        return false;
+    }
+
+    /**
+     * Returns the Manhattan distance between two positions.
+     */
+    public static int calcDistance(Position p1, Position p2) {
+        //return Math.abs(p1.getRow() - p2.getRow()) + Math.abs(p1.getCol() - p2.getCol());
+        int dist = Math.abs(p1.getRow() - p2.getRow()) + Math.abs(p1.getCol() - p2.getCol());
+        LogManager.log("Calculated distance between " + p1 + " and " + p2 + " = " + dist);
+        return dist;
+    }
+
+
+
+    public List<GameEntity> getAllEntities() {
+        List<GameEntity> all = new ArrayList<>();
+        for (List<GameEntity> cellEntities : grid.values()) {
+            all.addAll(cellEntities);
+        }
+        return all;
+    }
+
+
+    public static int getBoardSize() {
+        int size = 10;
+        while (true) {
+            String input = JOptionPane.showInputDialog(null,
+                    "Enter the board size (at least 10):", "Board Size", JOptionPane.QUESTION_MESSAGE);
+
+            if (input == null) {
+                JOptionPane.showMessageDialog(null, "No input provided. Defaulting to 10.");
+                break;
+            }
+
+            try {
+                size = Integer.parseInt(input);
+                if (size >= 10) break;
+                else JOptionPane.showMessageDialog(null, "Size must be at least 10.", "Invalid Input", JOptionPane.WARNING_MESSAGE);
+            } catch (NumberFormatException e) {
+                JOptionPane.showMessageDialog(null, "Please enter a valid number.", "Invalid Input", JOptionPane.WARNING_MESSAGE);
+            }
+        }
+        return size;
+    }
+
+
+    public void replaceEntity(GameEntity oldEntity, GameEntity newEntity) {
+        Position pos = oldEntity.getPosition();
+        List<GameEntity> entities = getEntitiesAt(pos);
+        entities.remove(oldEntity);
+        entities.add(newEntity);
+    }
+
+}
